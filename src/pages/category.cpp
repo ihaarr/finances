@@ -1,5 +1,7 @@
 #include "category.hpp"
 
+namespace pages
+{
 CategoryPage::CategoryPage(std::vector<size_t> const& cats, QWidget* parent) : Page(parent) {
 	auto* categories = new QTreeWidget(this);
 	categories->setColumnCount(1);
@@ -10,4 +12,6 @@ CategoryPage::CategoryPage(std::vector<size_t> const& cats, QWidget* parent) : P
 	}
 	categories->insertTopLevelItems(0, items);
 }
+}
+
 
