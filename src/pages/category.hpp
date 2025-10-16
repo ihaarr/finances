@@ -1,15 +1,18 @@
 #pragma once
 
-#include <vector>
-#include <QtWidgets/QTreeWidget>
 #include "page.hpp"
+
+namespace models
+{
+struct Category;
+}
 
 namespace pages
 {
 class CategoryPage : public Page {
 	Q_OBJECT
 public:
-	CategoryPage(std::vector<size_t> const& cats, QWidget* parent = nullptr);
+	CategoryPage(QVector<models::Category> const& cats, QWidget* parent = nullptr);
 };
 }
 

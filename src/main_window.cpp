@@ -1,15 +1,33 @@
+#include <format>
+
 #include <QHBoxLayout>
+#include <QVector>
+#include <QSqlError>
+
 #include "main_window.hpp"
 #include "pages/category.hpp"
 #include "pages/analytic.hpp"
 #include "pages/operation.hpp"
+#include "pages/page.hpp"
+#include "models/category.hpp"
 #include "sidebar.hpp"
+#include "storage.hpp"
 
-MainWindow::MainWindow() : QWidget(nullptr) {
+MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
+	auto st = storage::Storage::connect();
+	if (!st.has_value()) {
+		throw std::runtime_error("Failed to connect db");
+	}
+	storage = st.value();	
+	auto cats_res = storage.get_categories();
+	if (!cats_res.has_value()) {
+		throw std::runtime_error("Failed to get categories");
+	}
+	auto categories = cats_res.value();
 	layout = new QHBoxLayout(this);
 	auto* sidebar = new Sidebar();
 	connect(sidebar, &Sidebar::page_changed, this, &MainWindow::set_page);
-	category_page = new pages::CategoryPage({0,1,2,3,4});
+	category_page = new pages::CategoryPage(categories);
 	operation_page = new pages::OperationPage();
 	analytic_page = new pages::AnalyticPage();
 	layout->addWidget(sidebar);
