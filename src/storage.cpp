@@ -12,12 +12,12 @@
 
 namespace storage
 {
-std::expected<Storage, QSqlError> Storage::connect() {
+std::expected<Storage, QString> Storage::connect() {
 	const QString INIT_TABLE_CATEGORIES = QStringLiteral(
 	"CREATE TABLE IF NOT EXISTS Categories ("
 	"id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
 	"name TEXT NOT NULL,"
-	"arent_id INTEGER,"
+	"parent_id INTEGER,"
 	"FOREIGN KEY(parent_id) REFERENCES Categories(id)"
 	");"
 	);
@@ -33,20 +33,20 @@ std::expected<Storage, QSqlError> Storage::connect() {
 	);
 
 	auto db = QSqlDatabase::addDatabase("QSQLITE");
-	db.setDatabaseName("/Users/ihaarr/test.db");
+	db.setDatabaseName("/Users/ihaarr/empty.db");
 	if (!db.open()) {
-		return std::unexpected{db.lastError()};	
+		return std::unexpected{db.lastError().text()};	
 	}
 
 	QSqlQuery query(db);
 	if (!query.exec("PRAGMA foreign_keys = ON")) {
-		return std::unexpected{query.lastError()};	
+		return std::unexpected{query.lastError().text()};	
 	}
 	if (!query.exec(INIT_TABLE_CATEGORIES)) {
-		return std::unexpected{query.lastError()};	
+		return std::unexpected{query.lastError().text()};	
 	}	
 	if (!query.exec(INIT_TABLE_OPERATIONS)) {
-		return std::unexpected{query.lastError()};
+		return std::unexpected{query.lastError().text()};
 	}
 	
 	return Storage{db}; 
@@ -56,12 +56,11 @@ Storage::Storage(const QSqlDatabase& db) : conn(db) {
 
 }
 
-std::expected<QVector<models::Category>, QSqlError> Storage::get_categories() {
+std::expected<QVector<models::Category>, QString> Storage::get_categories() {
 	QSqlQuery query(conn);
 	query.prepare("SELECT id, name, parent_id FROM Categories ORDER BY id");
 	if (!query.exec()) {
-		throw std::runtime_error(query.lastError().text().toStdString());
-		return std::unexpected{query.lastError()};
+		return std::unexpected{query.lastError().text()};
 	}
 	struct CategoryDB {
 		size_t id;
@@ -100,5 +99,21 @@ std::expected<QVector<models::Category>, QSqlError> Storage::get_categories() {
 		res.emplace_back(category);
 	}
 	return res;
+}
+
+std::expected<size_t, QString> Storage::create_category(models::db::Category category) {
+	QSqlQuery query(conn);
+	query.prepare("INSERT INTO Categories (name, parent_id) VALUES (:name, :parent_id) RETURNING id");
+	query.bindValue(":name", QVariant::fromValue(category.name));
+	if (category.parent_id.has_value()) {
+		query.bindValue(QString(":parent_id"), QVariant::fromValue(category.parent_id.value()));
+	} else {
+		query.bindValue(QString(":parent_id"), QVariant());
+	}
+	if (!query.exec()) {
+		return std::unexpected{query.lastError().text()};
+	}
+	query.next();
+	return query.value(0).toInt();
 }
 }

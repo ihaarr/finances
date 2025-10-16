@@ -2,13 +2,11 @@
 
 #include <QWidget>
 
+#include "../models/category.hpp"
+
 class QComboBox;
 class QTextEdit;
 
-namespace models
-{
-class Category;
-}
 namespace pages
 {
 class CategoryPage;
@@ -19,6 +17,8 @@ public:
 	AddCategoryWindow(QVector<models::Category> const& categories, CategoryPage* parent = nullptr);
 private slots:
 	void handle_create_clicked();
+public slots:
+	void add_category_after_created(models::Category);
 signals:
 	void create_category(size_t parent_id, QString name);
 private:

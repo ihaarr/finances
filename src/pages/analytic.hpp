@@ -1,10 +1,10 @@
 #pragma once
 
-#include "page.hpp"
+#include <QWidget>
 
 namespace pages
 {
-class AnalyticPage : public Page {
+class AnalyticPage : public QWidget {
 	Q_OBJECT
 public:
 	AnalyticPage(QWidget* parent = nullptr);

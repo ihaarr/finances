@@ -3,7 +3,7 @@
 
 namespace pages
 {
-OperationPage::OperationPage(QWidget* parent) : Page(parent) {
+OperationPage::OperationPage(QWidget* parent) : QWidget(parent) {
 	new QLabel(QString("IOEPARA"), this);
 }
 }

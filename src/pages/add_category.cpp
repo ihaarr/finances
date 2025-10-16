@@ -36,4 +36,8 @@ void AddCategoryWindow::handle_create_clicked() {
 	QString name = edit->toPlainText();
 	emit create_category(id, name);
 }
+
+void AddCategoryWindow::add_category_after_created(models::Category category) {
+	categoriesCombo->addItem(category.name, QVariant::fromValue(category.id));
+}
 }

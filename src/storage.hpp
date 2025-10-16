@@ -1,13 +1,15 @@
 #pragma once
 
 #include <expected>
-
 #include <QSqlDatabase>
 
-class QSqlError;
 namespace models
 {
 struct Category;
+namespace db
+{
+struct Category;
+}
 }
 
 namespace storage
@@ -16,9 +18,10 @@ class Storage {
 public:
 	Storage() = default;
 	Storage(const QSqlDatabase& db);
-	static std::expected<Storage, QSqlError> connect();
+	static std::expected<Storage, QString> connect();
 
-	std::expected<QVector<models::Category>, QSqlError> get_categories();
+	std::expected<QVector<models::Category>, QString> get_categories();
+	std::expected<size_t, QString> create_category(models::db::Category);
 private:
 	QSqlDatabase conn;
 };
