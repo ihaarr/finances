@@ -6,6 +6,7 @@
 #include "models/category.hpp"
 
 class QHBoxLayout;
+class QTreeWidgetItem;
 
 namespace pages
 {
@@ -27,8 +28,10 @@ public:
 signals:
 	void created_category(models::Category);
 	void created_subcategory(models::Subcategory, size_t parent_id);
+	void result_remove_category(bool, QString);
 public slots:
 	void create_category_handler(models::db::Category);
+	void remove_category_handler(size_t id);
 private slots:
 	void set_page(pages::Type page);
 private:

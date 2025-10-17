@@ -116,4 +116,19 @@ std::expected<size_t, QString> Storage::create_category(models::db::Category cat
 	query.next();
 	return query.value(0).toInt();
 }
+
+std::expected<void, QString> Storage::remove_category(size_t id) {
+	QSqlQuery query(conn);
+	query.prepare("DELETE FROM Categories WHERE parent_id = :id");
+	query.bindValue(QString(":id"), QVariant::fromValue(id));
+	if (!query.exec()) {
+		return std::unexpected{query.lastError().text()};
+	}
+	query.prepare("DELETE FROM Categories WHERE id = :id");
+	query.bindValue(QString(":id"), QVariant::fromValue(id));
+	if (!query.exec()) {
+		return std::unexpected{query.lastError().text()};
+	}
+	return {};
+}
 }

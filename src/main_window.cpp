@@ -37,6 +37,15 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
 	connect(category_page, &CategoryPage::throw_create_category, this, &MainWindow::create_category_handler);
 }
 
+void MainWindow::remove_category_handler(size_t id) {
+	auto result = storage.remove_category(id);
+	if (result) {
+		emit result_remove_category(true, "");
+	} else {
+		emit result_remove_category(false, "");
+	}
+}
+
 void MainWindow::set_page(pages::Type page) {
 	auto* prev = current_page;
 	switch(page) {

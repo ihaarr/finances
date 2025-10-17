@@ -40,4 +40,12 @@ void AddCategoryWindow::handle_create_clicked() {
 void AddCategoryWindow::add_category_after_created(models::Category category) {
 	categoriesCombo->addItem(category.name, QVariant::fromValue(category.id));
 }
+
+void AddCategoryWindow::handle_remove_category(size_t id) {
+	auto index = categoriesCombo->findData(QVariant::fromValue(id));
+	if (index != -1) {
+		categoriesCombo->removeItem(index);
+		qDebug() << "removed category with id =" << id << "in add category form";
+	}
+}
 }

@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QDialog>
+#include <QLabel>
 
 #include "../main_window.hpp"
 #include "../models/category.hpp"
@@ -15,6 +17,7 @@ namespace pages
 {
 enum Data {
 	Id = 255,
+	ParentId,
 };
 
 CategoryPage::CategoryPage(QVector<models::Category> const& categories, MainWindow* parent) : QWidget(parent) {
@@ -24,9 +27,9 @@ CategoryPage::CategoryPage(QVector<models::Category> const& categories, MainWind
 
 	auto* addCategoryBtn = new QPushButton("Добавить");
 	connect(addCategoryBtn, &QPushButton::clicked, add_window, &QWidget::show);
-	auto* removeCategoryBtn = new QPushButton("Удалить");
+	removeCategoryBtn = new QPushButton("Удалить");
 	removeCategoryBtn->setEnabled(false);
-	auto* editCategoryBtn = new QPushButton("Редактировать");
+	editCategoryBtn = new QPushButton("Редактировать");
 	editCategoryBtn->setEnabled(false);
 
 	treeCategories = new QTreeWidget(this);
@@ -49,6 +52,7 @@ CategoryPage::CategoryPage(QVector<models::Category> const& categories, MainWind
 			auto* subcat = new QTreeWidgetItem(cat); 
 			subcat->setText(0, subcategory.name);
 			subcat->setData(0, Data::Id, QVariant::fromValue(subcategory.id));
+			subcat->setData(0, Data::ParentId, QVariant::fromValue(category.id));
 		}
 		items.append(cat);
 	}
@@ -57,6 +61,66 @@ CategoryPage::CategoryPage(QVector<models::Category> const& categories, MainWind
 	connect(parent, &MainWindow::created_category, this, &CategoryPage::handle_created_category);
 	connect(parent, &MainWindow::created_subcategory, this, &CategoryPage::handle_created_subcategory);
 	connect(this, &CategoryPage::handled_created_category, add_window, &AddCategoryWindow::add_category_after_created);
+	connect(treeCategories, &QTreeWidget::itemClicked, this, &CategoryPage::category_changed);
+	connect(removeCategoryBtn, &QPushButton::clicked, this, &CategoryPage::try_remove_category);
+	connect(this, &CategoryPage::throw_remove_category, parent, &MainWindow::remove_category_handler);
+	connect(parent, &MainWindow::result_remove_category, this, &CategoryPage::receive_answer_remove_category);
+	connect(this, &CategoryPage::category_removed_successful, add_window, &AddCategoryWindow::handle_remove_category);
+}
+
+void CategoryPage::receive_answer_remove_category(bool success, QString err) {
+	QDialog m;
+	m.setModal(true);
+	m.resize(100, 100);
+	auto* layout = new QVBoxLayout(&m);
+	auto* label = new QLabel(QString("Категория удалена"), &m);
+	auto* okBtn = new QPushButton(QString("OK"), &m);
+	layout->addWidget(label);
+	layout->addWidget(okBtn);
+	connect(okBtn, &QPushButton::clicked, &m, &QDialog::accept);
+	auto id = currentCategoryItem->data(0, Data::Id).toInt();
+
+	if (success) {
+		if (!currentCategoryItem->data(0, Data::ParentId).toInt()) {
+			qDebug() << "remove parent";
+			delete treeCategories->takeTopLevelItem(treeCategories->indexOfTopLevelItem(currentCategoryItem));
+			qDebug() << "removed parent";
+		} else {
+			auto parent_id = currentCategoryItem->data(0, Data::ParentId).toInt();
+			qDebug() << "remove child with parent_id" << parent_id;
+			for(uint32_t i = 0; i < treeCategories->topLevelItemCount(); ++i) {
+				auto* parent = treeCategories->topLevelItem(i);
+				if (parent->data(0, Data::Id).toInt() == parent_id) {
+					parent->removeChild(currentCategoryItem);
+					delete currentCategoryItem;
+					qDebug() << "removed child";
+				}
+			}
+		}
+		currentCategoryItem = nullptr;
+		treeCategories->setCurrentItem(nullptr);
+		removeCategoryBtn->setEnabled(false);
+		editCategoryBtn->setEnabled(false);
+		emit category_removed_successful(id);
+	} else {
+		label->setText(QString("Не удалось удалить категорию: %1").arg(err));
+	}
+
+	m.exec();
+}
+
+void CategoryPage::try_remove_category() {
+	qDebug() << "received try remove cateogry";
+	auto id = currentCategoryItem->data(0, Data::Id).toInt();
+	qDebug() << "trying remove category with id" << id;
+	emit throw_remove_category(id);
+}
+
+void CategoryPage::category_changed(QTreeWidgetItem* current, int) {
+	qDebug() << "category changed from" << currentCategoryItem << "to" << current;
+	currentCategoryItem = current;
+	removeCategoryBtn->setEnabled(true);
+	editCategoryBtn->setEnabled(true);
 }
 
 void CategoryPage::handle_create_category(size_t parent_id, QString name) {
@@ -88,6 +152,7 @@ void CategoryPage::handle_created_subcategory(models::Subcategory subcategory, s
 			auto* treeSubcategory = new QTreeWidgetItem(item);
 			treeSubcategory->setText(0, subcategory.name);
 			treeSubcategory->setData(0, Data::Id, QVariant::fromValue(subcategory.id));
+			treeSubcategory->setData(0, Data::ParentId, QVariant::fromValue(parent_id));
 			item->addChild(treeSubcategory);
 		}
 	}

@@ -22,6 +22,7 @@ public:
 
 	std::expected<QVector<models::Category>, QString> get_categories();
 	std::expected<size_t, QString> create_category(models::db::Category);
+	std::expected<void, QString> remove_category(size_t id);
 private:
 	QSqlDatabase conn;
 };
